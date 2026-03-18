@@ -29,7 +29,7 @@ Frontend (React/TS)  ──►  Backend (Django/DRF)  ──►  Claude API (Too
 4. Backend validates SQL (SELECT-only), executes against `demo.sqlite`, returns rows to Claude
 5. Claude writes a natural language explanation
 6. Backend detects best chart type from result shape, builds `chart_config`
-7. Response returned: `{sql, results, explanation, chart_config}`
+7. Response returned: `{sql_generated, results, explanation, chart_config}`
 8. Frontend renders: explanation → results table → Chart.js visualization → collapsible SQL
 9. Backend saves query to `QueryHistory`
 
@@ -162,7 +162,7 @@ Authorization: Token <token>
 ```json
 {
   "question": "What are the top 5 best selling products?",
-  "sql": "SELECT p.name, SUM(oi.quantity) AS total_sold FROM products p JOIN order_items oi ON p.id = oi.product_id GROUP BY p.id ORDER BY total_sold DESC LIMIT 5",
+  "sql_generated": "SELECT p.name, SUM(oi.quantity) AS total_sold FROM products p JOIN order_items oi ON p.id = oi.product_id GROUP BY p.id ORDER BY total_sold DESC LIMIT 5",
   "explanation": "I found the 5 best-selling products by summing quantities across all order items...",
   "results": {
     "columns": ["name", "total_sold"],
@@ -214,6 +214,10 @@ Authorization: Token <token>
       "question": "What are the top 5 best selling products?",
       "sql_generated": "SELECT ...",
       "explanation": "I found...",
+      "results": {
+        "columns": ["name", "total_sold"],
+        "rows": [["Wireless Headphones", 342], ["USB-C Cable", 289]]
+      },
       "chart_config": { "type": "bar", "x_key": "name", "y_key": "total_sold", "label": "Total Sold" },
       "row_count": 5,
       "created_at": "2026-03-18T14:30:00Z"
@@ -224,7 +228,9 @@ Authorization: Token <token>
 
 Ordered by `created_at` descending. No pagination for MVP (history capped at last 50 entries per user).
 
-**History sidebar click behavior:** clicking a history item re-populates the results area with the stored `explanation`, `sql_generated`, `chart_config`, and `row_count` from the history record. No re-execution occurs.
+> The `results` field (columns + rows) is stored in `QueryHistory` and included in the history response so the results table can be restored without re-executing the query.
+
+**History sidebar click behavior:** clicking a history item re-populates the results area with the stored `explanation`, `sql_generated`, `results`, `chart_config`, and `row_count` from the history record. No re-execution occurs.
 
 ---
 
@@ -300,21 +306,20 @@ def detect_chart_type(columns: list[str], rows: list[list]) -> dict | None:
     if not rows or len(columns) < 2:
         return None
 
-    # Classify each column as "text", "numeric", or "date"
-    # by inspecting Python types of values in first non-null row
+    # Classify each column as "text", "numeric", "date", or "percent"
+    # Column name keywords are checked FIRST; then Python value type is used as fallback.
     col_types = []
     for i, col in enumerate(columns):
         sample = next((r[i] for r in rows if r[i] is not None), None)
-        if isinstance(sample, (int, float)):
+        name_lower = col.lower()
+        if any(k in name_lower for k in ("pct", "percent", "rate", "share")):
+            col_types.append("percent")
+        elif any(k in name_lower for k in ("date", "month", "year", "week", "period", "day")):
+            col_types.append("date")
+        elif isinstance(sample, (int, float)):
             col_types.append("numeric")
         elif isinstance(sample, str):
-            name_lower = col.lower()
-            if any(k in name_lower for k in ("date", "month", "year", "week", "period", "day")):
-                col_types.append("date")
-            elif any(k in name_lower for k in ("pct", "percent", "rate", "share")):
-                col_types.append("percent")
-            else:
-                col_types.append("text")
+            col_types.append("text")
         else:
             col_types.append("text")
 
@@ -344,6 +349,7 @@ class QueryHistory(models.Model):
     question = models.TextField()
     sql_generated = models.TextField()
     explanation = models.TextField()
+    results = models.JSONField()          # {"columns": [...], "rows": [...]}
     chart_config = models.JSONField(null=True, blank=True)
     row_count = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -410,23 +416,32 @@ ALLOWED_HOSTS         # Railway domain in production
 
 ## Deployment (Railway — Single Service)
 
-Django serves the React SPA via Whitenoise.
+Django serves the React SPA via Whitenoise. Build occurs at Railway **build phase** (not runtime) so the container starts instantly and does not need `npm` at runtime.
 
-**`Procfile`:**
+**`railway.toml`** (at project root):
+```toml
+[build]
+buildCommand = "cd frontend && npm install && npm run build && cp -r dist ../backend/frontend_dist && cd ../backend && pip install -r ../requirements.txt && python manage.py collectstatic --noinput"
+
+[deploy]
+startCommand = "cd backend && gunicorn core.wsgi --bind 0.0.0.0:$PORT"
 ```
-web: cd frontend && npm run build && cd ../backend && python manage.py collectstatic --noinput && gunicorn core.wsgi --bind 0.0.0.0:$PORT
+
+**`Procfile`** (fallback, not used by Railway when `railway.toml` is present):
+```
+web: cd backend && gunicorn core.wsgi --bind 0.0.0.0:$PORT
 ```
 
 **Django settings for static + SPA routing:**
 ```python
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR.parent / "frontend" / "dist"]  # React build output
+STATICFILES_DIRS = [BASE_DIR / "frontend_dist"]  # React build output copied here
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MIDDLEWARE = ["whitenoise.middleware.WhiteNoiseMiddleware", ...]
 
 # Catch-all for React SPA routing (in core/urls.py)
 # re_path(r"^(?!api/).*", TemplateView.as_view(template_name="index.html"))
-TEMPLATES[0]["DIRS"] = [BASE_DIR.parent / "frontend" / "dist"]
+TEMPLATES[0]["DIRS"] = [BASE_DIR / "frontend_dist"]
 ```
 
 ---
