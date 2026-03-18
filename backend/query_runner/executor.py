@@ -11,7 +11,7 @@ def execute_sql(sql: str, db_path=None) -> dict:
     if "LIMIT" not in sql.upper():
         sql = f"{sql.rstrip(';')} LIMIT 500"
 
-    conn = sqlite3.connect(str(db_path))
+    conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     try:
         cursor = conn.cursor()
         cursor.execute(sql)
