@@ -1,36 +1,31 @@
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
 *.pyc
 *.pyo
-
-# Virtual environment
 .venv/
-venv/
-env/
+*.sqlite3
+*.sqlite
+*.egg-info/
 
 # Django
-*.sqlite3
-*.db
-/backend/staticfiles/
-/backend/media/
+backend/staticfiles/
+backend/app.sqlite
+backend/demo_db/demo.sqlite
+backend/frontend_dist/
 
-# Environment variables
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Env
 .env
 .env.*
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
+!.env.example
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Build
-dist/
-build/
-*.egg-info/
+# IDE
+.vscode/
+.idea/
