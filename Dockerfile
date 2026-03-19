@@ -21,11 +21,13 @@ RUN cd frontend && npm install && npm run build && \
 # Copy backend
 COPY backend/ ./backend/
 
-# Collect static files (dummy secret key just for this step)
-RUN cd backend && DJANGO_SECRET_KEY=build-only DEBUG=False python manage.py collectstatic --noinput
-
 WORKDIR /app/backend
+
+# Run migrations, seed demo and collect static at build time
+RUN DJANGO_SECRET_KEY=build-only DEBUG=False python manage.py migrate && \
+    DJANGO_SECRET_KEY=build-only DEBUG=False python manage.py seed_demo && \
+    DJANGO_SECRET_KEY=build-only DEBUG=False python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMD python manage.py migrate && python manage.py seed_demo && gunicorn core.wsgi --bind 0.0.0.0:$PORT --workers 2
+CMD gunicorn core.wsgi --bind 0.0.0.0:$PORT --workers 2
