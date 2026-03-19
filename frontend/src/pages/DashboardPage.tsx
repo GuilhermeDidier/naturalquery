@@ -63,8 +63,13 @@ export function DashboardPage({ username, onLogout }: Props) {
           <div className="results-area">
             {!result && !loading && (
               <div className="empty-state">
-                <p>Ask a question about the store data to get started.</p>
-                <p style={{ fontSize: 12 }}>Example: "What are the top 5 best selling products?"</p>
+                <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3" />
+                  <path d="M3 5v14c0 1.657 4.03 3 9 3s9-1.343 9-3V5" />
+                  <path d="M3 12c0 1.657 4.03 3 9 3s9-1.343 9-3" />
+                </svg>
+                <p className="empty-state-title">Ask anything about the store data</p>
+                <p>Try: "What are the top 5 best-selling products?" or "Show monthly revenue trends"</p>
               </div>
             )}
             {loading && <p className="loading-text">Thinking...</p>}
@@ -72,6 +77,11 @@ export function DashboardPage({ username, onLogout }: Props) {
             {result && !loading && (
               <>
                 <div className="explanation-box">{result.explanation}</div>
+                {result.row_count !== undefined && (
+                  <div className="result-meta">
+                    <span className="row-badge">{result.row_count} {result.row_count === 1 ? 'row' : 'rows'}</span>
+                  </div>
+                )}
                 <ResultsTable results={result.results} />
                 {result.chart_config && (
                   <ChartDisplay config={result.chart_config} results={result.results} />
