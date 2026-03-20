@@ -85,6 +85,15 @@ Replaces the static "Thinking..." text with a 3-phase animated sequence.
 
 ## Section 4 — Results Area
 
+**Full rendering order in `DashboardPage.tsx` after this redesign:**
+```
+1. <AIResponseCard />     (replaces explanation-box)
+2. <ResultMetaBar />      (replaces result-meta div — row count + Copy SQL)
+3. <ChartDisplay />       (only if chart_config present)
+4. <ResultsTable />
+5. <SqlBlock />           (replaces details.sql-toggle)
+```
+
 ### 4a — AI Response Card
 The explanation box is replaced by an AI response card:
 - `<AIBadge />` + "NaturalQuery AI" label above the text
@@ -94,9 +103,11 @@ The explanation box is replaced by an AI response card:
 
 ### 4b — Result Metadata Bar
 A horizontal bar between the AI card and the data, containing:
-- Row count badge: `↗ {n} rows` (styled with cyan text)
-- Execution time: `~0.3s` (muted, omitted if unavailable — backend doesn't currently send this, so show only row count)
+- Row count badge: `↗ {n} rows` (styled with cyan text — `row_count` is always present)
+- Execution time: omitted (backend doesn't send this)
 - "Copy SQL" button on the right (copies `sql_generated` to clipboard via `navigator.clipboard`)
+
+Replaces the existing `.result-meta` div in `DashboardPage.tsx`.
 
 ### 4c — Chart before Table
 When `chart_config` is present, `<ChartDisplay>` renders before `<ResultsTable>`. The chart is the insight; the table is the detail. Order change only — no component modifications.
@@ -107,6 +118,11 @@ When `chart_config` is present, `<ChartDisplay>` renders before `<ResultsTable>`
 **Implementation:** `<SqlBlock sql={sql_generated} />` component in `src/components/Results/SqlBlock.tsx`. The `<details>/<summary>` toggle wrapper from the current implementation is retained inside `SqlBlock` — the collapsible UX is preserved. `SqlBlock` renders a `<details>` with the summary "View generated SQL" and a highlighted `<code>` block inside.
 
 Uses `useEffect` to run `hljs.highlightElement()` on a `<code>` ref after mount. Guard against React StrictMode double-invocation: check `!codeRef.current.dataset.highlighted` before calling `hljs.highlightElement()`. `highlight.js` ships its own TypeScript types — no `@types/highlight.js` needed.
+
+**Theme:** `atom-one-dark` — matches the existing dark background (`#050810`). Import via:
+```ts
+import 'highlight.js/styles/atom-one-dark.css'
+```
 
 Replaces the current `<details className="sql-toggle">` block inline in `DashboardPage`.
 
