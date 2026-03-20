@@ -26,7 +26,7 @@ The current frontend is functionally solid but visually generic. This redesign e
 
 **Color system:** The existing indigo accent (`#6366f1`) is retained for UI chrome. A second accent, cyan (`#06b6d4`), is introduced exclusively for AI-origin elements — responses, badges, highlights, and hover states on example cards. This two-tone system creates an immediate visual distinction: indigo = product/UI, cyan = AI intelligence.
 
-**AI Avatar Badge:** A small hexagonal icon with a cyan→indigo gradient used consistently to mark AI-generated content. Appears before response text and in the loading state. Implemented as a reusable React component `<AIBadge />`.
+**AI Avatar Badge:** A small hexagonal icon with a cyan→indigo gradient used consistently to mark AI-generated content. Appears before response text and in the loading state. Implemented as a reusable React component `<AIBadge />` at `src/components/UI/AIBadge.tsx`.
 
 **Typography:** No font change (Inter). Result explanation text gets `font-weight: 500` and `letter-spacing: -0.2px` for slightly more authority. No other typography changes.
 
@@ -60,9 +60,9 @@ Replaces the current generic database icon + static text with an interactive wel
 | 👤 | Top 10 customers by spend | Customers |
 | 👤 | New customers last month | Customers |
 
-**Interaction:** Clicking a card sets the chat input value and immediately submits the query (calls `handleQuery` directly). Cards have a subtle cyan border on hover.
+**Interaction:** Clicking a card calls `handleQuery(question)` directly — no input state change. The chat input remains empty. Cards have a subtle cyan border on hover.
 
-**Component:** Extracted into `<EmptyState onSelect={handleQuery} />` in `src/components/Chat/EmptyState.tsx`.
+**Component:** Extracted into `<EmptyState onSelect={handleQuery} />` in `src/components/Chat/EmptyState.tsx`. Prop signature: `onSelect: (question: string) => void`.
 
 ---
 
@@ -77,7 +77,7 @@ Replaces the static "Thinking..." text with a 3-phase animated sequence.
 
 **Visual:** `<AIBadge />` on the left + phase text + animated ellipsis (`...` pulsing via CSS keyframes). Fade transition between phases using CSS `opacity` animation.
 
-**Implementation:** React `useState` + `useEffect` with `setInterval` (cleared on unmount). Pure CSS animation — no external library.
+**Implementation:** React `useState` + `useEffect` with `setInterval`. The `useEffect` must return `() => clearInterval(id)` as the cleanup function to prevent state updates on unmounted components. Pure CSS animation — no external library.
 
 **Component:** `<LoadingState />` in `src/components/Chat/LoadingState.tsx`.
 
@@ -104,7 +104,11 @@ When `chart_config` is present, `<ChartDisplay>` renders before `<ResultsTable>`
 ### 4d — SQL Syntax Highlight
 **Library:** `highlight.js` (specifically `highlight.js/lib/core` + `highlight.js/lib/languages/sql` + one dark theme). Chosen for minimal bundle size (~10kb gzipped for core + one language).
 
-**Implementation:** `<SqlBlock sql={sql_generated} />` component in `src/components/Results/SqlBlock.tsx`. Uses `useEffect` to run `hljs.highlightElement()` on a `<code>` ref after mount. Replaces the current `<pre className="sql-block">` inline in `DashboardPage`.
+**Implementation:** `<SqlBlock sql={sql_generated} />` component in `src/components/Results/SqlBlock.tsx`. The `<details>/<summary>` toggle wrapper from the current implementation is retained inside `SqlBlock` — the collapsible UX is preserved. `SqlBlock` renders a `<details>` with the summary "View generated SQL" and a highlighted `<code>` block inside.
+
+Uses `useEffect` to run `hljs.highlightElement()` on a `<code>` ref after mount. Guard against React StrictMode double-invocation: check `!codeRef.current.dataset.highlighted` before calling `hljs.highlightElement()`. `highlight.js` ships its own TypeScript types — no `@types/highlight.js` needed.
+
+Replaces the current `<details className="sql-toggle">` block inline in `DashboardPage`.
 
 **Install:** `npm install highlight.js`
 
@@ -122,6 +126,8 @@ The sidebar header changes from just "HISTORY" to "History · {n} queries" where
 
 If `chart_config` is present on a history item, a small chart icon (SVG) appears at the right edge of the item on hover.
 
+**CSS note:** The existing `.history-item` uses `white-space: nowrap` for single-line truncation. Adding a second metadata line requires removing `white-space: nowrap` from `.history-item` and restructuring it as a flex column — line 1 truncated, line 2 in muted smaller text.
+
 **No backend changes required.** All data (`row_count`, `created_at`) is already returned by the history API endpoint.
 
 ---
@@ -134,10 +140,10 @@ If `chart_config` is present on a history item, a small chart icon (SVG) appears
 | `src/pages/DashboardPage.tsx` | Wire up new components, reorder chart/table |
 | `src/components/Chat/EmptyState.tsx` | New component |
 | `src/components/Chat/LoadingState.tsx` | New component |
-| `src/components/Layout/AIBadge.tsx` | New reusable component |
+| `src/components/UI/AIBadge.tsx` | New reusable component |
 | `src/components/Results/SqlBlock.tsx` | New component wrapping highlight.js |
 | `src/components/Sidebar/QueryHistory.tsx` | Add timestamp + row count metadata |
-| `package.json` / `frontend/package.json` | Add `highlight.js` dependency |
+| `frontend/package.json` | Add `highlight.js` dependency |
 
 ---
 
@@ -149,6 +155,7 @@ If `chart_config` is present on a history item, a small chart icon (SVG) appears
 - No routing changes
 - No mobile/responsive work
 - No dark/light theme toggle
+- Error state appearance is unchanged (existing `.error-msg` class retained as-is)
 
 ---
 
