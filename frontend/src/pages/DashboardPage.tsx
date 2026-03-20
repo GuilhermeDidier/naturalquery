@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react'
 import { Header } from '../components/Layout/Header'
 import { QueryHistory as QueryHistorySidebar } from '../components/Sidebar/QueryHistory'
 import { ChatInput } from '../components/Chat/ChatInput'
-import { EmptyState } from '../components/Chat/EmptyState'
-import { LoadingState } from '../components/Chat/LoadingState'
 import { ResultsTable } from '../components/Results/ResultsTable'
 import { ChartDisplay } from '../components/Results/ChartDisplay'
+import { EmptyState } from '../components/Chat/EmptyState'
+import { LoadingState } from '../components/Chat/LoadingState'
+import { ResultMetaBar } from '../components/Results/ResultMetaBar'
+import { SqlBlock } from '../components/Results/SqlBlock'
+import { AIBadge } from '../components/UI/AIBadge'
 import { postQuery, getHistory } from '../api/client'
 import type { QueryResponse, HistoryItem } from '../types'
 
@@ -70,20 +73,28 @@ export function DashboardPage({ username, onLogout }: Props) {
             {error && <p className="error-msg" style={{ padding: '8px 0' }}>{error}</p>}
             {result && !loading && (
               <>
-                <div className="explanation-box">{result.explanation}</div>
-                {result.row_count !== undefined && (
-                  <div className="result-meta">
-                    <span className="row-badge">{result.row_count} {result.row_count === 1 ? 'row' : 'rows'}</span>
+                {/* 1. AI Response Card */}
+                <div className="ai-response-card">
+                  <div className="ai-response-header">
+                    <AIBadge />
+                    NaturalQuery AI
                   </div>
-                )}
-                <ResultsTable results={result.results} />
+                  <p className="ai-response-text">{result.explanation}</p>
+                </div>
+
+                {/* 2. Result Meta Bar */}
+                <ResultMetaBar rowCount={result.row_count} sql={result.sql_generated} />
+
+                {/* 3. Chart (before table — insight first) */}
                 {result.chart_config && (
                   <ChartDisplay config={result.chart_config} results={result.results} />
                 )}
-                <details className="sql-toggle">
-                  <summary>View generated SQL</summary>
-                  <pre className="sql-block">{result.sql_generated}</pre>
-                </details>
+
+                {/* 4. Table */}
+                <ResultsTable results={result.results} />
+
+                {/* 5. SQL Block */}
+                <SqlBlock sql={result.sql_generated} />
               </>
             )}
           </div>
