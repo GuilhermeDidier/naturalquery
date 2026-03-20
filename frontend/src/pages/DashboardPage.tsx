@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { Header } from '../components/Layout/Header'
 import { QueryHistory as QueryHistorySidebar } from '../components/Sidebar/QueryHistory'
 import { ChatInput } from '../components/Chat/ChatInput'
+import { EmptyState } from '../components/Chat/EmptyState'
+import { LoadingState } from '../components/Chat/LoadingState'
 import { ResultsTable } from '../components/Results/ResultsTable'
 import { ChartDisplay } from '../components/Results/ChartDisplay'
 import { postQuery, getHistory } from '../api/client'
@@ -62,17 +64,9 @@ export function DashboardPage({ username, onLogout }: Props) {
         <div className="main-area">
           <div className="results-area">
             {!result && !loading && (
-              <div className="empty-state">
-                <svg className="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <ellipse cx="12" cy="5" rx="9" ry="3" />
-                  <path d="M3 5v14c0 1.657 4.03 3 9 3s9-1.343 9-3V5" />
-                  <path d="M3 12c0 1.657 4.03 3 9 3s9-1.343 9-3" />
-                </svg>
-                <p className="empty-state-title">Ask anything about the store data</p>
-                <p>Try: "What are the top 5 best-selling products?" or "Show monthly revenue trends"</p>
-              </div>
+              <EmptyState onSelect={handleQuery} />
             )}
-            {loading && <p className="loading-text">Thinking...</p>}
+            {loading && <LoadingState />}
             {error && <p className="error-msg" style={{ padding: '8px 0' }}>{error}</p>}
             {result && !loading && (
               <>
