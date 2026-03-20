@@ -3,6 +3,15 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load .env file if present (for local development)
+_env_file = BASE_DIR / ".env"
+if _env_file.exists():
+    for _line in _env_file.read_text().splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _v = _line.split("=", 1)
+            os.environ[_k.strip()] = _v.strip()
+
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-key-change-in-production")
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
@@ -82,8 +91,8 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Project-specific settings
 DEMO_DB_PATH = BASE_DIR / "demo_db" / "demo.sqlite"
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-CLAUDE_MODEL = "claude-sonnet-4-5-20250514"
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+CLAUDE_MODEL = "claude-haiku-4-5-20251001"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_PASSWORD_VALIDATORS = []

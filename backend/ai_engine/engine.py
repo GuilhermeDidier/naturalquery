@@ -31,7 +31,8 @@ def run_query(question: str) -> tuple:
     Raises InvalidSQLError if Claude generates a non-SELECT query.
     Raises QueryEngineError if Claude cannot answer.
     """
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    api_key = settings.ANTHROPIC_API_KEY or None
+    client = anthropic.Anthropic(api_key=api_key)
     messages = [{"role": "user", "content": build_user_message(question)}]
 
     last_sql = None
