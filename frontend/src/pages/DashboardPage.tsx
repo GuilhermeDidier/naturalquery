@@ -7,6 +7,7 @@ import { ResultsTable } from '../components/Results/ResultsTable'
 import { ChartDisplay } from '../components/Results/ChartDisplay'
 import { EmptyState } from '../components/Chat/EmptyState'
 import { LoadingState } from '../components/Chat/LoadingState'
+import { SuggestionChips } from '../components/Chat/SuggestionChips'
 import { ResultMetaBar } from '../components/Results/ResultMetaBar'
 import { SqlBlock } from '../components/Results/SqlBlock'
 import { AIBadge } from '../components/UI/AIBadge'
@@ -101,6 +102,7 @@ export function DashboardPage({ username, onLogout }: Props) {
               </>
             )}
           </div>
+          {result && <SuggestionChips onSelect={handleQuery} disabled={loading} />}
           <ChatInput onSubmit={handleQuery} disabled={loading} />
         </div>
       </div>
