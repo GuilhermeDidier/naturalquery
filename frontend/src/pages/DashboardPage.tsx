@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { Header } from '../components/Layout/Header'
 import { QueryHistory as QueryHistorySidebar } from '../components/Sidebar/QueryHistory'
 import { ChatInput } from '../components/Chat/ChatInput'
@@ -79,7 +80,9 @@ export function DashboardPage({ username, onLogout }: Props) {
                     <AIBadge />
                     NaturalQuery AI
                   </div>
-                  <p className="ai-response-text">{result.explanation}</p>
+                  <div className="ai-response-text">
+                    <ReactMarkdown>{result.explanation}</ReactMarkdown>
+                  </div>
                 </div>
 
                 {/* 2. Result Meta Bar */}
