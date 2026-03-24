@@ -8,10 +8,10 @@ interface Props {
 const QUERY_CARDS = [
   { icon: '📦', question: 'Top 5 best-selling products' },
   { icon: '📦', question: 'Products with low stock' },
-  { icon: '💰', question: 'Monthly revenue this year' },
+  { icon: '💰', question: 'Monthly revenue trend' },
   { icon: '💰', question: 'Revenue by category' },
   { icon: '👤', question: 'Top 10 customers by spend' },
-  { icon: '👤', question: 'New customers last month' },
+  { icon: '👤', question: 'Customers by state' },
 ]
 
 export function EmptyState({ onSelect }: Props) {
