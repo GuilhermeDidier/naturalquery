@@ -2,6 +2,10 @@ import sqlite3
 from django.conf import settings
 
 
+class SQLExecutionError(Exception):
+    pass
+
+
 def execute_sql(sql: str, db_path=None) -> dict:
     """Execute a validated SELECT query. Returns {"columns": [...], "rows": [...]}."""
     if db_path is None:
@@ -18,5 +22,7 @@ def execute_sql(sql: str, db_path=None) -> dict:
         columns = [desc[0] for desc in cursor.description] if cursor.description else []
         rows = [list(row) for row in cursor.fetchall()]
         return {"columns": columns, "rows": rows}
+    except sqlite3.Error as e:
+        raise SQLExecutionError(str(e)) from e
     finally:
         conn.close()

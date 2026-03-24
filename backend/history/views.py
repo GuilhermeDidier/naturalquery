@@ -5,6 +5,7 @@ from rest_framework import status
 
 from ai_engine.engine import run_query, QueryEngineError
 from query_runner.validator import InvalidSQLError
+from query_runner.executor import SQLExecutionError
 from query_runner.chart import detect_chart_type
 from .models import QueryHistory
 from .serializers import QueryHistorySerializer
@@ -22,6 +23,11 @@ class QueryView(APIView):
             sql_generated, results, explanation = run_query(question)
         except InvalidSQLError as e:
             return Response({"errors": {"query": [str(e)]}}, status=400)
+        except SQLExecutionError:
+            return Response(
+                {"errors": {"question": ["Could not run that query. Please try rephrasing."]}},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
         except QueryEngineError as e:
             return Response({"errors": {"question": [str(e)]}},
                             status=status.HTTP_422_UNPROCESSABLE_ENTITY)
